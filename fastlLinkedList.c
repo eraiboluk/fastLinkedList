@@ -69,13 +69,6 @@ void listeYazdir(list *head){
         iter=iter2;
         seviye++;
     }while(iter2!=NULL); 
-   /* 
-    iter=head->next;
-    do{
-    	printf("%d\n|\n",iter->value);
-    	iter=iter->below;
-	}while(iter!=NULL);
-    */
 }
 
 list *ustSeviyelerOlustur(list*head, int n, int *dizi, int *random){
@@ -100,7 +93,7 @@ list *ustSeviyelerOlustur(list*head, int n, int *dizi, int *random){
 	return ustSeviyelerOlustur(head, (n+1)/2, dizi, random);
 }
 
-list *ilkSeviyeOlustur2(list*head, int n, int *dizi){
+list *ilkSeviyeOlustur(list*head, int n, int *dizi){
 	int i;
 
 	head=(list*)malloc(sizeof(list));
@@ -122,7 +115,9 @@ list *ilkSeviyeOlustur2(list*head, int n, int *dizi){
 int listedeAra(list *head, int a){
 	int seviye=1, b=0, i;
 	list *iter1=head;
+	
 	b=kacSeviye(head);
+	
 	for(i=0;i<b;i++){
 		while(iter1->next!=NULL && iter1->next->value <= a){
 			iter1=iter1->next;
@@ -138,9 +133,72 @@ int listedeAra(list *head, int a){
 	return 0;
 }
 
+list *freeList(list *head, int n){
+	int i;
+	list *iter, *iter2;
+	for(i=0;i<n;i++){
+		iter=head;
+		head=head->below;
+		while(iter->next!=NULL){
+			iter2=iter;
+			iter=iter->next;
+			free(iter2);  
+		}
+		free(iter);	
+	}
+	return head;
+}
+
+list *araEkle(list *head, int yeni){
+	list *iter=head, *iter2;
+
+	while(iter->next!=NULL && iter->next->value < yeni)
+		iter=iter->next;
+	
+	if(iter->next==NULL){
+		iter->next=(list*)malloc(sizeof(list));
+        iter=iter->next;
+        iter->value=yeni;
+        iter->next=NULL;
+        return head;
+	}
+
+	iter2=(list*)malloc(sizeof(list));
+
+	iter2->value=yeni;
+
+	iter2->next=iter->next;
+
+	iter->next=iter2;
+
+	return head;
+}
+
+list *araSil(list *head, int sil){
+	list *iter=head, *iter2;
+
+	while(iter->next->value != sil)
+		iter=iter->next;
+	
+	if(iter->next->next==NULL){
+		iter2=iter->next;
+		free(iter2);
+        iter->next=NULL;
+        return head;
+	}
+
+	iter2=iter->next;
+	
+	iter->next=iter2->next;
+
+	free(iter2);
+
+	return head;
+}
+
 int main(){
 
-    int n, i, j=0, s, a=0, b=0, ara, *dizi, *random;
+    int n, i, j=0, s, a=0, b=0, ara, *dizi, *random, yeni, k=0, sil, temp;  //oncelikle
     list *head;
     while(a==0){
 
@@ -172,7 +230,7 @@ int main(){
 			random=randomla(n);
 			
             dizi=sortDizi(dizi,n);
-            head=ilkSeviyeOlustur2(head,n,dizi);
+            head=ilkSeviyeOlustur(head,n,dizi);
             head=ustSeviyelerOlustur(head,(n+1)/2,dizi,random);
             listeYazdir(head);
 
@@ -194,15 +252,69 @@ int main(){
             break;
 
         case 3:
-            
+        	k=0;
+        	printf("Eleman giriniz\n\n");
+        	scanf("%d",&yeni);
+        	for(i=0;i<n;i++)
+        		if(dizi[i]==yeni){
+        			printf("Eleman zaten bulunuyor!!\n\n");
+        			k++;
+				}
+			if(k==0){
+				n++;
+				dizi=(int*)realloc(dizi,sizeof(int)*n);
+	        	dizi[n-1]=yeni;		
+	        	
+	        	random=(int*)realloc(dizi,sizeof(int)*n);    
+				random=randomla(n);
+				
+				dizi=sortDizi(dizi,n);
+				
+				for(i=0;i<n;i++)
+					printf("%d ",dizi[i]);
+					
+				printf("\n\n");
+				
+	            head=freeList(head,(kacSeviye(head)-1));
+	            head=araEkle(head,yeni);
+	            head=ustSeviyelerOlustur(head,(n+1)/2,dizi,random);
+	            listeYazdir(head);
+            }
             break;
 
         case 4:
-            
+        	k=0;
+            printf("Eleman giriniz\n\n");
+        	scanf("%d",&sil);
+        	for(i=0;i<n;i++)
+        		if(dizi[i]==sil){
+        			for(j=i;j<n-1;j++){
+        				dizi[j]=dizi[j+1];	
+					}
+        			k=1;
+        			break;
+        		}
+			
+			if(k==0)
+				printf("Silinecek eleman yok\n\n");
+				
+			if(k==1){
+				n--;
+				dizi=(int*)realloc(dizi,sizeof(int)*n);
+				
+				random=(int*)realloc(dizi,sizeof(int)*n);    
+				random=randomla(n);
+					
+				head=freeList(head,(kacSeviye(head)-1));
+				head=araSil(head,sil);
+	            head=ustSeviyelerOlustur(head,(n+1)/2,dizi,random);
+	            listeYazdir(head);
+				
+			}
             break;
 
         case 5:
-            
+            listeYazdir(head);
             break;
 
         case 6:
@@ -212,4 +324,8 @@ int main(){
         
         }
     }
+    head=freeList(head,kacSeviye(head));
+    free(dizi);
+    free(random);
+    return 0;
 }
